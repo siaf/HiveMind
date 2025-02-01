@@ -57,7 +57,7 @@ class SystemPrompt(BaseModel):
         description="Example responses to guide the model"
     )
     format_instructions: str = Field(
-        default="Return your response as a clean JSON object without any markdown formatting. The JSON object should have 'activity' and 'tasks' fields. Tasks can be tool tasks, agent tasks, or completion tasks. Use completion tasks to signal the end of a workflow with final results.",
+        default="Return your response as a clean JSON object without any markdown formatting. The JSON object should have 'activity' and 'tasks' fields. Tasks can be tool tasks, agent tasks, or completion tasks. Use completion tasks to signal the end of a workflow with final results. ONLY PROVIDE JSON IN YOUR RESPONSE. WE NEED THE RESPONSE TO BE PARSED BY A JSON PARSER.",
         description="Instructions for response formatting",
         min_length=20
     )

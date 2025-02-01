@@ -23,35 +23,47 @@ class Workflow:
 
     def process_queue(self, initial_prompt: str) -> None:
         """Process the task queue starting with an initial prompt."""
-        # Generate initial analysis
-        self.primary_agent.state = AgentState.THINKING
-        print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
-        response = self.primary_agent.generate_response(initial_prompt, self.task_queue)
-        self.primary_agent.state = AgentState.IDLE
-        print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
+        # Maximum number of retries for parsing LLM response
+        MAX_RETRIES = 3
+        retry_count = 0
 
-        try:
-            # Clean and escape the response string before parsing
-            cleaned_response = response.encode('utf-8').decode('unicode-escape')
-            # Parse the response into TaskBreakdown model
-            task_breakdown = TaskBreakdown.model_validate_json(cleaned_response)
+        while retry_count < MAX_RETRIES:
+            # Generate initial analysis
+            self.primary_agent.state = AgentState.THINKING
+            print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
+            response = self.primary_agent.generate_response(initial_prompt, self.task_queue)
+            self.primary_agent.state = AgentState.IDLE
+            print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
 
-            # Add initial tasks to the queue and set owner agent
-            for task in task_breakdown.tasks:
-                task.owner_agent = self.primary_agent.config.name
-            self.task_queue.add_tasks(task_breakdown.tasks)
+            try:
+                # Clean and escape the response string before parsing
+                cleaned_response = response.encode('utf-8').decode('unicode-escape')
+                # Parse the response into TaskBreakdown model
+                task_breakdown = TaskBreakdown.model_validate_json(cleaned_response)
 
-            # Print initial analysis header
-            print(f"{COLORS['BOLD']}Directory Analysis:{COLORS['END']}")
-            print("-" * 50)
+                # Add initial tasks to the queue and set owner agent
+                for task in task_breakdown.tasks:
+                    task.owner_agent = self.primary_agent.config.name
+                self.task_queue.add_tasks(task_breakdown.tasks)
 
-            # Process all tasks in the queue
-            while self.task_queue.has_pending_tasks() or self.task_queue.current_task:
-                self._process_next_task()
+                # Print initial analysis header
+                print(f"{COLORS['BOLD']}Directory Analysis:{COLORS['END']}")
+                print("-" * 50)
 
-        except Exception as e:
-            print(f"{COLORS['RED']}Error parsing response: {str(e)}{COLORS['END']}")
-            print(f"{COLORS['RED']}Raw response: {response}{COLORS['END']}")
+                # Process all tasks in the queue
+                while self.task_queue.has_pending_tasks() or self.task_queue.current_task:
+                    self._process_next_task()
+                
+                # If we successfully parsed and processed the response, break the retry loop
+                break
+
+            except Exception as e:
+                retry_count += 1
+                if retry_count < MAX_RETRIES:
+                    print(f"{COLORS['YELLOW']}Failed to parse response (attempt {retry_count}/{MAX_RETRIES}). Retrying...{COLORS['END']}")
+                else:
+                    print(f"{COLORS['RED']}Error parsing response after {MAX_RETRIES} attempts: {str(e)}{COLORS['END']}")
+                    print(f"{COLORS['RED']}Raw response: {response}{COLORS['END']}")
 
     def _process_next_task(self) -> None:
         """Process the next task in the queue."""
