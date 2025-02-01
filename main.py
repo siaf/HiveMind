@@ -1,4 +1,6 @@
 import os
+import warnings
+warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 from dotenv import load_dotenv
 import argparse
 from models import AgentConfig, TaskBreakdown
