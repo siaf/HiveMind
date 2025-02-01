@@ -52,12 +52,12 @@ def main():
         available_agents={}
     )
 
-    da_sysprompmt=directory_analyzer_prompt.generate_prompt();
+    directory_analyzer_sysprompt = directory_analyzer_prompt.generate_prompt()
     
     # Create agent configurations
     directory_analyzer_config = AgentConfig(
         name="DirectoryAnalyzer",
-        system_prompt=da_sysprompmt,
+        system_prompt=directory_analyzer_sysprompt,
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
@@ -70,10 +70,10 @@ def main():
         verbose=args.verbose,
         debug=args.debug
     )
-    sysprompt=text_analyzer_prompt.generate_prompt()
+    text_analyzer_sysprompt = text_analyzer_prompt.generate_prompt()
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
-        system_prompt=sysprompt,
+        system_prompt=text_analyzer_sysprompt,
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
@@ -84,9 +84,6 @@ def main():
         debug=args.debug
     )
 
-    if args.debug:
-        print(f"\033[90m{sysprompt}\033[0m")
-
     # Initialize agents
     directory_analyzer = Agent(directory_analyzer_config)
     text_analyzer = Agent(text_analyzer_config)
@@ -95,10 +92,10 @@ def main():
     task_queue = TaskQueue()
     
     # Initialize workflow with text analyzer for testing
-    workflow = Workflow(text_analyzer, task_queue)
+    workflow = Workflow(directory_analyzer, task_queue)
 
     # Test the text analyzer with a sample file
-    workflow.process_queue("Analyze the contents of test.txt")
+    workflow.process_queue("Analyze the contents of {args.path}")
 
 if __name__ == "__main__":
     main()
