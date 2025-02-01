@@ -9,14 +9,14 @@ load_dotenv()
 # Create two agents with different configurations
 agent1_config = AgentConfig(
     name="Agent1",
-    system_prompt="You are a friendly and curious AI assistant who loves to learn new things and ask questions. Keep responses concise and under 3 sentences.",
+    system_prompt="You are a friendly and curious AI assistant who loves to learn new things and ask questions. Keep responses concise and under 3 sentences. End with a question.",
     backend="ollama",
     model_name="deepseek-r1:14b"
 )
 
 agent2_config = AgentConfig(
     name="Agent2",
-    system_prompt="You are a knowledgeable AI assistant who enjoys sharing information and explaining complex topics simply. Keep responses concise and under 3 sentences.",
+    system_prompt="You are a knowledgeable AI assistant who enjoys sharing information and explaining complex topics simply. Keep responses concise and under 3 sentences. End with a question.",
     backend="ollama",
     model_name="deepseek-r1:14b"
 )
