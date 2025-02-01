@@ -39,6 +39,7 @@ class OpenAIBackend(LLMBackend):
 class OllamaBackend(LLMBackend):
     _initialized = False
     _session = None
+    _verbose = False
 
     @staticmethod
     def _process_response(response: str) -> str:
@@ -51,12 +52,13 @@ class OllamaBackend(LLMBackend):
         # Return everything after the last </think> tag
         return response[last_think_end + 8:].strip()
 
-    def __init__(self, model_name: str = "deepseek-r1:14b"):
+    def __init__(self, model_name: str = "deepseek-r1:14b", verbose: bool = False):
         with self._lock:
             if not self._initialized:
                 self.model_name = model_name
                 self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
                 self._session = requests.Session()
+                self._verbose = verbose
                 self._initialized = True
 
     def generate_response(self, messages: List[Message]) -> str:
@@ -90,12 +92,14 @@ class OllamaBackend(LLMBackend):
                             chunk = response_json["message"]["content"]
                         
                         if chunk:
-                            print(chunk, end='', flush=True)
+                            if self._verbose:
+                                print(chunk, end='', flush=True)
                             full_response += chunk
                     except json.JSONDecodeError:
                         continue
             
-            print()  # Add a newline at the end of the response
+            if self._verbose:
+                print()  # Add a newline at the end of the response
             
             if full_response:
                 return self._process_response(full_response)

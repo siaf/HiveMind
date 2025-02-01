@@ -12,7 +12,7 @@ class Agent:
         if self.config.backend == "openai":
             return OpenAIBackend(self.config.model_name)
         elif self.config.backend == "ollama":
-            return OllamaBackend(self.config.model_name)
+            return OllamaBackend(self.config.model_name, verbose=self.config.verbose)
         else:
             raise ValueError(f"Unsupported backend: {self.config.backend}")
 

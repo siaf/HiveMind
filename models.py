@@ -1,13 +1,20 @@
 from pydantic import BaseModel
 from typing import Literal, Union
 
-class Message(BaseModel):
-    content: str
-    role: Literal["assistant", "user", "system"]
-    name: Union[str, None] = None
+from dataclasses import dataclass
 
-class AgentConfig(BaseModel):
+@dataclass
+class Message:
+    role: str
+    content: str
     name: str
+
+@dataclass
+class AgentConfig:
+    name: str
+    backend: str
+    model_name: str
     system_prompt: str
+    verbose: bool = False
     backend: Literal["openai", "ollama"]
     model_name: str
