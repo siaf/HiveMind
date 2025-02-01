@@ -18,6 +18,7 @@ class AgentConfig:
     available_agents: Set[str] = Field(default_factory=set)
     verbose: bool = False
 
+@dataclass
 class Task(BaseModel):
     title: str = Field(
         ...,
@@ -42,6 +43,10 @@ class Task(BaseModel):
     task_type: Literal["tool", "agent"] = Field(
         ...,
         description="Type of task - either a tool task or an agent task"
+    )
+    owner_agent: str = Field(
+        ...,
+        description="Name of the agent that owns this task"
     )
 
 class ToolTask(Task):
