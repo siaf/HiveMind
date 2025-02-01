@@ -95,7 +95,7 @@ def main():
     workflow = Workflow(directory_analyzer, task_queue)
 
     # Test the text analyzer with a sample file
-    workflow.process_queue("Analyze the contents of {args.path}")
+    workflow.process_queue(f"Analyze the contents of {args.path}")
 
 if __name__ == "__main__":
     main()
