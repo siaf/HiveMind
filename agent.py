@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from models import Message, AgentConfig
 from backends import LLMBackend, OpenAIBackend, OllamaBackend
 from tools import ToolRegistry
+from shared_types import AgentState, Task
 
 class Agent:
     def __init__(self, config: AgentConfig):
@@ -9,6 +10,8 @@ class Agent:
         self.messages: List[Message] = []
         self.backend = self._create_backend()
         self.tool_registry = ToolRegistry()
+        self.state = AgentState.IDLE
+        self.current_task: Optional[Task] = None
 
     def _create_backend(self) -> LLMBackend:
         if self.config.backend == "openai":
@@ -44,7 +47,8 @@ class Agent:
             name=self.config.name
         ))
 
-    def generate_response(self, prompt: str, task_queue=None) -> str:
+    def generate_response(self, prompt: str, task_queue) -> str:
+        self.state = AgentState.THINKING
         # Add system prompt if this is the first message
         if not self.messages:
             self.add_message(Message(
@@ -54,15 +58,18 @@ class Agent:
             ))
 
         # Add completed tasks information if available
-        if task_queue and task_queue.completed_tasks:
+        if task_queue.completed_tasks:
             completed_tasks_info = "\nCompleted tasks:\n"
             for task in task_queue.completed_tasks:
-                completed_tasks_info += f"- {task.title}: {task.description}\n"
+                completed_tasks_info += f"- {task.name}: {task.description}\n"
             self.add_message(Message(
                 role="system",
                 content=completed_tasks_info,
                 name=self.config.name
             ))
+        
+        # Clear the task queue before generating new response
+        task_queue.queue.clear()
 
         # Add the new message
         self.add_message(Message(

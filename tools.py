@@ -32,7 +32,9 @@ class ListDirectoryTool(Tool):
         self.requires_approval = True
     
     def _execute(self, params: Dict[str, Any]) -> str:
-        # Mock implementation that always returns 3 text files
+        # Mock implementation that returns 3 text files
+        # Path parameter is optional, defaults to current directory
+        path = params.get('path', '.')
         mock_files = [
             'file1.txt',
             'file2.txt',
@@ -77,7 +79,7 @@ class ToolRegistry:
     
     def _register_default_tools(self):
         """Register default tools."""
-        self.register_tool('ls', ListDirectoryTool(), {'path': 'Required path to list directory contents'})
+        self.register_tool('ls', ListDirectoryTool(), {'path': 'Optional path to list directory contents (defaults to current directory)'})
         self.register_tool('cd', ChangeDirectoryTool())
         self.register_tool('read_file', ReadFileTool())
     

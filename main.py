@@ -6,6 +6,8 @@ from agent import Agent
 from system_prompts import SystemPrompt
 from task_queue import TaskQueue
 import json
+from shared_types import AgentState
+from workflow import Workflow
 
 # ANSI color codes
 COLORS = {
@@ -47,9 +49,8 @@ def main():
         available_agents={}
     )
 
-
     da_sysprompmt=directory_analyzer_prompt.generate_prompt();
-    print(da_sysprompmt)
+    
     # Create agent configurations
     directory_analyzer_config = AgentConfig(
         name="DirectoryAnalyzer",
@@ -87,73 +88,12 @@ def main():
     # Initialize task queue
     task_queue = TaskQueue()
     
-    # Generate initial directory analysis
+    # Initialize workflow with the directory analyzer agent
+    workflow = Workflow(directory_analyzer, task_queue)
+
+    # Process the queue with the initial prompt
     normalized_path = args.path.replace('\\', '/')
-    response = directory_analyzer.generate_response(f"Analyze the contents of {normalized_path}", task_queue)
-    
-    try:
-        # Clean and escape the response string before parsing
-        cleaned_response = response.encode('utf-8').decode('unicode-escape')
-        # Parse the response into TaskBreakdown model
-        task_breakdown = TaskBreakdown.model_validate_json(cleaned_response)
-        
-        # Add initial tasks to the queue and set owner agent
-        for task in task_breakdown.tasks:
-            task.owner_agent = directory_analyzer.config.name
-        task_queue.add_tasks(task_breakdown.tasks)
-        
-        # Print initial analysis header
-        print(f"{COLORS['BOLD']}Directory Analysis:{COLORS['END']}")
-        print("-" * 50)
-        
-        # Process all tasks in the queue
-        task_count = 0
-        while task_queue.has_pending_tasks() or task_queue.current_task:
-            if not task_queue.current_task:
-                task = task_queue.get_next_task()
-                task_count += 1
-                print(f"\n{COLORS['BLUE']}{COLORS['BOLD']}Task {task_count}: {task.title}{COLORS['END']}")
-                print(f"{COLORS['CYAN']}Description: {task.description}{COLORS['END']}")
-                print(f"{COLORS['CYAN']}Owner Agent: {task.owner_agent}{COLORS['END']}")
-                print(f"{COLORS['CYAN']}Remaining tasks in queue: {len(task_queue.queue)}{COLORS['END']}")
-            else:
-                task = task_queue.current_task
-            
-            if task.task_type == "tool":
-                print(f"{COLORS['GREEN']}Tool: {task.tool_name} Params: {task.tool_params}{COLORS['END']}")
-                # Execute the tool and process its result
-                # Determine which agent should execute the tool
-                executing_agent = text_analyzer if task.owner_agent == "text_analyzer" else directory_analyzer
-                result = executing_agent.execute_tool(task.tool_name, task.tool_params)
-                executing_agent.process_tool_result(task.tool_name, result)
-                print(f"{COLORS['GREEN']}Tool Result:\n{result}{COLORS['END']}")
-                
-                # Generate and process follow-up response
-                follow_up_response = executing_agent.generate_response(f"Process the results of {task.tool_name} execution", task_queue)
-                print(f"{COLORS['GREEN']}Follow-up Analysis:\n{follow_up_response}{COLORS['END']}")
-                
-                # Process any new tasks from the follow-up response
-                task_queue.process_follow_up_response(follow_up_response, executing_agent)
-            else:
-                print(f"{COLORS['YELLOW']}Agent: {task.agent_name}{COLORS['END']}")
-                print(f"{COLORS['YELLOW']}Instructions: {task.instructions}{COLORS['END']}")
-                
-                # Determine which agent to execute
-                executing_agent = text_analyzer if task.agent_name == "text_analyzer" else directory_analyzer
-                
-                # Generate response from the agent
-                agent_response = executing_agent.generate_response(task.instructions, task_queue)
-                print(f"{COLORS['YELLOW']}Agent Response:\n{agent_response}{COLORS['END']}")
-                
-                # Process any new tasks from the agent's response
-                task_queue.process_follow_up_response(agent_response, executing_agent)
-            
-            # Mark current task as completed
-            task_queue.complete_current_task()
-            
-    except Exception as e:
-        print(f"{COLORS['RED']}Error parsing response: {str(e)}{COLORS['END']}")
-        print(f"{COLORS['RED']}Raw response: {response}{COLORS['END']}")
+    workflow.process_queue(f"Analyze the contents of {normalized_path}")
 
 if __name__ == "__main__":
     main()

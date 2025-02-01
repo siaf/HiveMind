@@ -42,6 +42,11 @@ class Task(BaseModel, ABC):
         description="Name of the agent that owns this task"
     )
 
+    @property
+    def name(self) -> str:
+        """Compatibility property that returns the task's title."""
+        return self.title
+
 class ToolTask(Task):
     task_type: Literal["tool"] = "tool"
     tool_name: str = Field(
