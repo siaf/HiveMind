@@ -24,6 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description='Run the agent to analyze directory contents')
     parser.add_argument('-p', '--path', default='.', help='Path to analyze')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode for detailed output')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode for system prompts and message history')
     args = parser.parse_args()
 
     # Load environment variables
@@ -64,11 +65,10 @@ def main():
         available_agents={
             "text_analyzer": "Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once."
         },
-        verbose=args.verbose
+        verbose=args.verbose,
+        debug=args.debug
     )
     sysprompt=text_analyzer_prompt.generate_prompt()
-    if args.verbose:
-        print(f"\033[90m{sysprompt}\033[0m")
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
         system_prompt=sysprompt,
@@ -78,14 +78,16 @@ def main():
             "read_file": "Readss the contents of a single text file"
         },
         available_agents={},
-        verbose=args.verbose
+        verbose=args.verbose,
+        debug=args.debug
     )
+
+    if args.debug:
+        print(f"\033[90m{sysprompt}\033[0m")
 
     # Initialize agents
     directory_analyzer = Agent(directory_analyzer_config)
     text_analyzer = Agent(text_analyzer_config)
-    
-    # print(f"\nAnalyzing directory: {COLORS['BOLD']}{args.path}{COLORS['END']}\n")
     
     # Initialize task queue for text analyzer testing
     task_queue = TaskQueue()
@@ -95,10 +97,6 @@ def main():
 
     # Test the text analyzer with a sample file
     workflow.process_queue("Analyze the contents of test.txt")
-
-    # Process the queue with the initial prompt
-    #normalized_path = args.path.replace('\\', '/')
-    #workflow.process_queue(f"Analyze the contents of {normalized_path}")
 
 if __name__ == "__main__":
     main()

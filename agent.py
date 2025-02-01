@@ -85,7 +85,7 @@ class Agent:
         ))
         
         # Print current message history for debugging
-        if self.config.verbose:
+        if self.config.verbose and self.config.debug:
             print("\n\033[90m=== Messages being sent to LLM ===\n\033[0m")
             for msg in self.messages:
                 print(f"\033[90m[{msg.role}] {msg.name}: {msg.content}\n\033[0m")

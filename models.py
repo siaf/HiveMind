@@ -18,6 +18,7 @@ class AgentConfig:
     available_tools: Dict[str, str] = Field(default_factory=dict)
     available_agents: Dict[str, str] = Field(default_factory=dict)
     verbose: bool = False
+    debug: bool = False
 
 class Task(BaseModel, ABC):
     title: str = Field(
