@@ -61,10 +61,10 @@ class ReadFileTool(Tool):
     
     def _execute(self, params: Dict[str, Any]) -> str:
         # Mock implementation that returns content based on file name
-        if 'path' not in params:
-            return "Error: 'path' parameter is required"
+        file_path = params.get('path') or params.get('file_path')
+        if not file_path:
+            return "Error: Either 'path' or 'file_path' parameter is required"
         
-        file_path = params['path']
         file_name = os.path.basename(file_path)
         return f"This is {file_name}"
 

@@ -89,7 +89,7 @@ def main():
     
     # Generate initial directory analysis
     normalized_path = args.path.replace('\\', '/')
-    response = directory_analyzer.generate_response(f"Analyze the contents of {normalized_path}")
+    response = directory_analyzer.generate_response(f"Analyze the contents of {normalized_path}", task_queue)
     
     try:
         # Clean and escape the response string before parsing
@@ -120,7 +120,7 @@ def main():
                 task = task_queue.current_task
             
             if task.task_type == "tool":
-                print(f"{COLORS['GREEN']}Tool: {task.tool_name}{COLORS['END']}")
+                print(f"{COLORS['GREEN']}Tool: {task.tool_name} Params: {task.tool_params}{COLORS['END']}")
                 # Execute the tool and process its result
                 # Determine which agent should execute the tool
                 executing_agent = text_analyzer if task.owner_agent == "text_analyzer" else directory_analyzer
@@ -129,7 +129,7 @@ def main():
                 print(f"{COLORS['GREEN']}Tool Result:\n{result}{COLORS['END']}")
                 
                 # Generate and process follow-up response
-                follow_up_response = executing_agent.generate_response(f"Process the results of {task.tool_name} execution")
+                follow_up_response = executing_agent.generate_response(f"Process the results of {task.tool_name} execution", task_queue)
                 print(f"{COLORS['GREEN']}Follow-up Analysis:\n{follow_up_response}{COLORS['END']}")
                 
                 # Process any new tasks from the follow-up response
@@ -142,7 +142,7 @@ def main():
                 executing_agent = text_analyzer if task.agent_name == "text_analyzer" else directory_analyzer
                 
                 # Generate response from the agent
-                agent_response = executing_agent.generate_response(task.instructions)
+                agent_response = executing_agent.generate_response(task.instructions, task_queue)
                 print(f"{COLORS['YELLOW']}Agent Response:\n{agent_response}{COLORS['END']}")
                 
                 # Process any new tasks from the agent's response

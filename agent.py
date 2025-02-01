@@ -44,12 +44,23 @@ class Agent:
             name=self.config.name
         ))
 
-    def generate_response(self, prompt: str) -> str:
+    def generate_response(self, prompt: str, task_queue=None) -> str:
         # Add system prompt if this is the first message
         if not self.messages:
             self.add_message(Message(
                 role="system",
                 content=self.config.system_prompt,
+                name=self.config.name
+            ))
+
+        # Add completed tasks information if available
+        if task_queue and task_queue.completed_tasks:
+            completed_tasks_info = "\nCompleted tasks:\n"
+            for task in task_queue.completed_tasks:
+                completed_tasks_info += f"- {task.title}: {task.description}\n"
+            self.add_message(Message(
+                role="system",
+                content=completed_tasks_info,
                 name=self.config.name
             ))
 
