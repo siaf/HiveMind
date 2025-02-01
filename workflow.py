@@ -102,6 +102,9 @@ class Workflow:
         executing_agent.process_tool_result(task.tool_name, result)
         print(f"{COLORS['GREEN']}Tool Result:\n{result}{COLORS['END']}")
 
+        # Mark the task as completed before processing follow-up
+        self.task_queue.complete_current_task()
+
         # Generate and process follow-up response
         executing_agent.state = AgentState.THINKING
         print(f"{COLORS['YELLOW']}Agent State: {executing_agent.state.value}{COLORS['END']}")

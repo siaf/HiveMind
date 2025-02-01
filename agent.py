@@ -41,9 +41,12 @@ class Agent:
 
     def process_tool_result(self, tool_name: str, result: str) -> None:
         """Process the result of a tool execution and add it to message history."""
+        formatted_result = f"=== Tool Execution Result ===\nTool: {tool_name}\nResult:\n{result}\n=== End Result ===\n"
+        if self.current_task:
+            formatted_result += f"\n=== Task Completion ===\nTask: {self.current_task.name}\nDescription: {self.current_task.description}\nResult: {result}\n=== End Task Completion ==="
         self.add_message(Message(
             role="system",
-            content=f"Tool execution result for {tool_name}:\n{result}",
+            content=formatted_result,
             name=self.config.name
         ))
 
@@ -56,12 +59,15 @@ class Agent:
                 content=self.config.system_prompt,
                 name=self.config.name
             ))
-
+        
         # Add completed tasks information if available
         if task_queue.completed_tasks:
-            completed_tasks_info = "\nCompleted tasks:\n"
+            completed_tasks_info = "=== Previously Completed Tasks ===\n"
             for task in task_queue.completed_tasks:
-                completed_tasks_info += f"- {task.name}: {task.description}\n"
+                completed_tasks_info += f"- {task.name}:\n  Description: {task.description}\n"
+                if hasattr(task, 'result') and task.result:
+                    completed_tasks_info += f"  Result: {task.result}\n"
+            completed_tasks_info += "=== End Completed Tasks ===\n"
             self.add_message(Message(
                 role="system",
                 content=completed_tasks_info,
@@ -77,6 +83,12 @@ class Agent:
             content=prompt,
             name=self.config.name
         ))
+        
+        # Print current message history for debugging
+        if self.config.verbose:
+            print("\n\033[90m=== Messages being sent to LLM ===\n\033[0m")
+            for msg in self.messages:
+                print(f"\033[90m[{msg.role}] {msg.name}: {msg.content}\n\033[0m")
 
         # Generate response
         response = self.backend.generate_response(self.messages)

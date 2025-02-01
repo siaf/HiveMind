@@ -66,10 +66,12 @@ def main():
         },
         verbose=args.verbose
     )
-    
+    sysprompt=text_analyzer_prompt.generate_prompt()
+    if args.verbose:
+        print(f"\033[90m{sysprompt}\033[0m")
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
-        system_prompt=text_analyzer_prompt.generate_prompt(),
+        system_prompt=sysprompt,
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
