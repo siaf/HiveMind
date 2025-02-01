@@ -43,12 +43,19 @@ class OllamaBackend(LLMBackend):
                 try:
                     response_json = json.loads(line.decode('utf-8'))
                     # Check for both 'response' and 'message' fields as per Ollama API format
+                    chunk = ""
                     if "response" in response_json:
-                        full_response += response_json["response"]
+                        chunk = response_json["response"]
                     elif "message" in response_json and "content" in response_json["message"]:
-                        full_response += response_json["message"]["content"]
+                        chunk = response_json["message"]["content"]
+                    
+                    if chunk:
+                        print(chunk, end='', flush=True)
+                        full_response += chunk
                 except json.JSONDecodeError:
                     continue
+        
+        print()  # Add a newline at the end of the response
         
         if full_response:
             return full_response
