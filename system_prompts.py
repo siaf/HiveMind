@@ -119,7 +119,7 @@ class SystemPrompt(BaseModel):
             f"You are a task planning assistant. {self.content}",
             "Available tools: " + ", ".join(sorted(self.available_tools)),
             "Available agents: " + ", ".join(sorted(self.available_agents)),
-            f"IMPORTANT: {self.format_instructions}",
+            f"IMPORTANT: {self.format_instructions} When providing file paths in responses, use forward slashes (/) instead of backslashes (\\) for cross-platform compatibility.",
             "Response Schema:",
             str(self.response_schema),
             "Example outputs:"

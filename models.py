@@ -50,9 +50,18 @@ class ToolTask(Task):
         description="Name of the tool to be executed"
     )
     tool_params: Dict = Field(
-        default={},
+        default_factory=dict,
         description="Parameters for the tool execution"
     )
+
+    @field_validator('tool_params')
+    def normalize_paths(cls, v):
+        # Normalize any file paths in the parameters
+        if isinstance(v, dict):
+            for key, value in v.items():
+                if isinstance(value, str) and ('\\' in value):
+                    v[key] = value.replace('\\', '/')
+        return v
 
     @field_validator('tool_name')
     def validate_tool_name(cls, v, values):
@@ -106,7 +115,7 @@ class TaskBreakdown(BaseModel):
         min_length=5,
         examples=["Backend Development", "Frontend Implementation", "System Architecture"]
     )
-    tasks: List[Task] = Field(
+    tasks: List[Union[ToolTask, AgentTask]] = Field(
         ...,
         description="List of tasks under this activity",
         min_items=1
