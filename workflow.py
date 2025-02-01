@@ -24,8 +24,11 @@ class Workflow:
     def process_queue(self, initial_prompt: str) -> None:
         """Process the task queue starting with an initial prompt."""
         # Maximum number of retries for parsing LLM response
-        MAX_RETRIES = 3
+        MAX_RETRIES = 1
         retry_count = 0
+        
+        # Normalize the initial prompt path separators
+        initial_prompt = initial_prompt.replace('\\', '/')
 
         while retry_count < MAX_RETRIES:
             # Generate initial analysis

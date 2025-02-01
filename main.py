@@ -3,9 +3,9 @@ import warnings
 warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 from dotenv import load_dotenv
 import argparse
-from models import AgentConfig, TaskBreakdown
+from agent import AgentConfig
+from models import TaskBreakdown, AgentModel
 from agent import Agent
-from system_prompts import SystemPrompt
 from task_queue import TaskQueue
 import json
 from shared_types import AgentState
@@ -32,32 +32,10 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    # Create system prompts for both agents
-    directory_analyzer_prompt = SystemPrompt(
-        content="Analyze the specified directory by listing its contents and providing summaries of text files.",
-        available_tools={
-            "ls": "List directory contents",
-            "cd": "Change current working directory"
-        },
-        available_agents={
-            "text_analyzer": "Analyzes text files and provides detailed summaries"
-        }
-    )
-    
-    text_analyzer_prompt = SystemPrompt(
-        content="Analyze text files and provide detailed summaries of their contents.",
-        available_tools={
-            "read_file": "Reads the contents of a single text file"
-        },
-        available_agents={}
-    )
-
-    directory_analyzer_sysprompt = directory_analyzer_prompt.generate_prompt()
-    
-    # Create agent configurations
+    # Create agent models
     directory_analyzer_config = AgentConfig(
         name="DirectoryAnalyzer",
-        system_prompt=directory_analyzer_sysprompt,
+        system_prompt_content="Analyze the specified directory by listing its contents and providing summaries of text files. Reminder that only JSON respones are acceptable as we need to parse them using code.",
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
@@ -70,21 +48,21 @@ def main():
         verbose=args.verbose,
         debug=args.debug
     )
-    text_analyzer_sysprompt = text_analyzer_prompt.generate_prompt()
+    
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
-        system_prompt=text_analyzer_sysprompt,
+        system_prompt_content="Analyze text files and provide detailed summaries of their contents. Reminder that only JSON respones are acceptable as we need to parse them using code.",
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
-            "read_file": "Readss the contents of a single text file"
+            "read_file": "Reads the contents of a single text file"
         },
         available_agents={},
         verbose=args.verbose,
         debug=args.debug
     )
 
-    # Initialize agents
+    # Initialize agents with their respective configs
     directory_analyzer = Agent(directory_analyzer_config)
     text_analyzer = Agent(text_analyzer_config)
     

@@ -1,8 +1,46 @@
-from typing import List, Dict, Any
-from models import Message, AgentConfig
+from typing import List, Dict, Any, Optional
+from models import Message, AgentModel
 from backends import LLMBackend, OpenAIBackend, OllamaBackend
 from tools import ToolRegistry
 from shared_types import AgentState, Task
+from system_prompts import SystemPrompt
+
+class AgentConfig:
+    def __init__(self, 
+    name: str,
+    system_prompt_content: str,
+    backend: str,
+    model_name: str,
+    available_tools: Dict[str, str],
+    available_agents: Dict[str, str],
+    verbose: bool = False,
+    debug: bool = False):
+        prompt = SystemPrompt(
+            content=system_prompt_content,
+            available_tools=available_tools,
+            available_agents=available_agents
+        )
+        system_prompt = prompt.generate_prompt()
+        self.model = AgentModel(
+            name=name,
+            system_prompt=system_prompt,
+            backend=backend,
+            model_name=model_name,
+            available_tools=available_tools,
+            available_agents=available_agents,
+            verbose=verbose,
+            debug=debug,
+        )
+        self.name = self.model.name
+        self.system_prompt = self.model.system_prompt
+        self.backend = self.model.backend
+        self.model_name = self.model.model_name
+        self.available_tools = self.model.available_tools
+        self.available_agents = self.model.available_agents
+        self.verbose = self.model.verbose
+        self.debug = self.model.debug
+       
+
 
 class Agent:
     def __init__(self, config: AgentConfig):

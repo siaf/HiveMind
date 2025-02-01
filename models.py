@@ -10,7 +10,7 @@ class Message:
     name: str
 
 @dataclass
-class AgentConfig:
+class AgentModel:
     name: str
     system_prompt: str
     backend: Literal["openai", "ollama"]
