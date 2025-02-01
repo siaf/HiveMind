@@ -5,15 +5,33 @@ import os
 class Tool(ABC):
     """Base class for all tools."""
     
-    @abstractmethod
+    def __init__(self):
+        self.requires_approval = False
+    
+    def _get_user_approval(self) -> bool:
+        """Get user approval for executing the tool."""
+        response = input('\033[91mDo you approve this tool execution? (y/n): \033[0m').lower()
+        return response == 'y'
+    
     def execute(self, params: Dict[str, Any]) -> str:
         """Execute the tool with given parameters."""
+        if self.requires_approval and not self._get_user_approval():
+            return "Tool execution cancelled by user"
+        return self._execute(params)
+    
+    @abstractmethod
+    def _execute(self, params: Dict[str, Any]) -> str:
+        """Internal execute method to be implemented by subclasses."""
         pass
 
 class ListDirectoryTool(Tool):
     """Tool for listing directory contents."""
     
-    def execute(self, params: Dict[str, Any]) -> str:
+    def __init__(self):
+        super().__init__()
+        self.requires_approval = True
+    
+    def _execute(self, params: Dict[str, Any]) -> str:
         try:
             path = params.get('path', '.')
             entries = os.listdir(path)
@@ -24,7 +42,11 @@ class ListDirectoryTool(Tool):
 class ChangeDirectoryTool(Tool):
     """Tool for changing the current working directory."""
     
-    def execute(self, params: Dict[str, Any]) -> str:
+    def __init__(self):
+        super().__init__()
+        self.requires_approval = True
+    
+    def _execute(self, params: Dict[str, Any]) -> str:
         try:
             path = params.get('path', '.')
             os.chdir(path)
