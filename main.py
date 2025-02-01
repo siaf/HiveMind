@@ -1,68 +1,66 @@
 import os
 from dotenv import load_dotenv
 import argparse
-from models import AgentConfig
+from models import AgentConfig, TaskBreakdown
 from agent import Agent
+from system_prompts import SystemPrompt
+import json
 
 def main():
-    parser = argparse.ArgumentParser(description='Run the agent with optional verbose mode')
+    parser = argparse.ArgumentParser(description='Run the agent to analyze directory contents')
+    parser.add_argument('-p', '--path', default='.', help='Path to analyze')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode for detailed output')
     args = parser.parse_args()
-
-    # Color constants
-    AGENT1_THINK = "\033[94m"  # Light blue
-    AGENT1_RESPOND = "\033[34m"  # Dark blue
-    AGENT2_THINK = "\033[92m"  # Light green
-    AGENT2_RESPOND = "\033[32m"  # Dark green
-    RESET = "\033[0m"  # Reset color
 
     # Load environment variables
     load_dotenv()
 
-    # Create two agents with different configurations
-    agent1_config = AgentConfig(
-        name="Agent1",
-        system_prompt="You are a friendly and curious AI assistant who loves to learn new things and ask questions. Keep responses concise and under 3 sentences. End with a question.",
+    # Create system prompt
+    system_prompt = SystemPrompt(
+        content="Analyze the specified directory by listing its contents and providing summaries of text files.",
+        available_tools={"ls", "cd"},
+        available_agents={"text_analyzer"}
+    )
+
+    # Create agent configuration
+    agent_config = AgentConfig(
+        name="DirectoryAnalyzer",
+        system_prompt=system_prompt.generate_prompt(),
         backend="ollama",
         model_name="deepseek-r1:14b",
+        available_tools={"ls", "cd"},
+        available_agents={"text_analyzer"},
         verbose=args.verbose
     )
 
-    agent2_config = AgentConfig(
-        name="Agent2",
-        system_prompt="You are a knowledgeable AI assistant who enjoys sharing information and explaining complex topics simply. Keep responses concise and under 3 sentences. End with a question.",
-        backend="ollama",
-        model_name="deepseek-r1:14b",
-        verbose=args.verbose
-    )
+    # Initialize agent
+    agent = Agent(agent_config)
 
-    # Initialize agents
-    agent1 = Agent(agent1_config)
-    agent2 = Agent(agent2_config)
-
-    # Start the conversation
-    max_turns = 2
-    current_prompt = "What's your favorite color and why?"
-
-    print("Starting conversation between agents...\n")
-
-    for turn in range(max_turns):
-        print(f"\n--- Turn {turn + 1} ---")
+    print(f"\nAnalyzing directory: {args.path}\n")
+    
+    # Generate directory analysis
+    response = agent.generate_response(f"Analyze the contents of {args.path}")
+    
+    try:
+        # Parse the response into TaskBreakdown model
+        task_breakdown = TaskBreakdown.model_validate_json(response)
         
-        # Agent 1's turn
-        print(f"{AGENT1_THINK}{agent1_config.name} thinking...{RESET}")
-        response1 = agent1.generate_response(current_prompt)
-        print(f"{AGENT1_RESPOND}{agent1_config.name}: {response1}{RESET}\n")
-        
-        # Agent 2's turn
-        print(f"{AGENT2_THINK}{agent2_config.name} thinking...{RESET}")
-        response2 = agent2.generate_response(response1)
-        print(f"{AGENT2_RESPOND}{agent2_config.name}: {response2}{RESET}\n")
-        
-        # Update the prompt for the next turn
-        current_prompt = response2
-
-    print("Conversation ended.")
+        # Print the tasks in a formatted way
+        print("Directory Analysis:")
+        print("-" * 50)
+        for i, task in enumerate(task_breakdown.tasks, 1):
+            print(f"\nTask {i}: {task.title}")
+            print(f"Description: {task.description}")
+            print(f"Estimated Duration: {task.estimated_duration}")
+            if task.task_type == "tool":
+                print(f"Tool: {task.tool_name}")
+            else:
+                print(f"Agent: {task.agent_name}")
+                print(f"Instructions: {task.instructions}")
+            
+    except Exception as e:
+        print(f"Error parsing response: {str(e)}")
+        print("Raw response:", response)
 
 if __name__ == "__main__":
     main()

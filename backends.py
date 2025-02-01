@@ -43,14 +43,19 @@ class OllamaBackend(LLMBackend):
 
     @staticmethod
     def _process_response(response: str) -> str:
-        """Remove <think> sections from the response."""
+        """Remove <think> sections and markdown formatting from the response."""
         # Find the last </think> tag
         last_think_end = response.rfind('</think>')
-        if last_think_end == -1:
-            return response
+        if last_think_end != -1:
+            response = response[last_think_end + 8:].strip()
         
-        # Return everything after the last </think> tag
-        return response[last_think_end + 8:].strip()
+        # Remove markdown code block formatting if present
+        if response.startswith('```json\n'):
+            response = response[7:]
+        if response.endswith('\n```'):
+            response = response[:-4]
+        
+        return response.strip()
 
     def __init__(self, model_name: str = "deepseek-r1:14b", verbose: bool = False):
         with self._lock:
