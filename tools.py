@@ -54,6 +54,37 @@ class ChangeDirectoryTool(Tool):
         except Exception as e:
             return f"Error changing directory: {str(e)}"
 
+class ReadFileTool(Tool):
+    """Tool for reading file contents."""
+    
+    def __init__(self):
+        super().__init__()
+        self.requires_approval = True
+    
+    def _execute(self, params: Dict[str, Any]) -> str:
+        try:
+            if 'path' not in params:
+                return "Error: 'path' parameter is required"
+            
+            file_path = params['path']
+            if not isinstance(file_path, str):
+                return "Error: 'path' parameter must be a string"
+            
+            if not file_path.strip():
+                return "Error: 'path' parameter cannot be empty"
+            
+            if not os.path.exists(file_path):
+                return f"Error: File '{file_path}' does not exist"
+            
+            if not os.path.isfile(file_path):
+                return f"Error: '{file_path}' is not a file"
+            
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                return content
+        except Exception as e:
+            return f"Error reading file: {str(e)}"
+
 class ToolRegistry:
     """Registry for managing available tools."""
     
@@ -65,6 +96,7 @@ class ToolRegistry:
         """Register default tools."""
         self.register_tool('ls', ListDirectoryTool())
         self.register_tool('cd', ChangeDirectoryTool())
+        self.register_tool('read_file', ReadFileTool())
     
     def register_tool(self, name: str, tool: Tool):
         """Register a new tool."""

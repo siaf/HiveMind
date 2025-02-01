@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Literal, Union, List, Dict, Set
 from dataclasses import dataclass
+from abc import ABC
 
 @dataclass
 class Message:
@@ -14,12 +15,11 @@ class AgentConfig:
     system_prompt: str
     backend: Literal["openai", "ollama"]
     model_name: str
-    available_tools: Set[str] = Field(default_factory=set)
-    available_agents: Set[str] = Field(default_factory=set)
+    available_tools: Dict[str, str] = Field(default_factory=dict)
+    available_agents: Dict[str, str] = Field(default_factory=dict)
     verbose: bool = False
 
-@dataclass
-class Task(BaseModel):
+class Task(BaseModel, ABC):
     title: str = Field(
         ...,
         description="The title of the task",
@@ -33,23 +33,17 @@ class Task(BaseModel):
         min_length=10,
         examples=["Set up JWT-based authentication system", "Design and implement database schema"]
     )
-    estimated_duration: str = Field(
-        ...,
-        description="Estimated time to complete the task",
-        pattern=r'^\d+\s*(hour|hours|minute|minutes|day|days)$',
-        examples=["2 hours", "1 day", "30 minutes"],
-        json_schema_extra={"examples": ["4 hours", "45 minutes", "2 days"]}
-    )
     task_type: Literal["tool", "agent"] = Field(
         ...,
         description="Type of task - either a tool task or an agent task"
     )
     owner_agent: str = Field(
-        ...,
+        default="",
         description="Name of the agent that owns this task"
     )
 
 class ToolTask(Task):
+    task_type: Literal["tool"] = "tool"
     tool_name: str = Field(
         ...,
         description="Name of the tool to be executed"
@@ -61,7 +55,6 @@ class ToolTask(Task):
 
     @field_validator('tool_params')
     def normalize_paths(cls, v):
-        # Normalize any file paths in the parameters
         if isinstance(v, dict):
             for key, value in v.items():
                 if isinstance(value, str) and ('\\' in value):
@@ -70,22 +63,10 @@ class ToolTask(Task):
 
     @field_validator('tool_name')
     def validate_tool_name(cls, v, values):
-        # This will be validated against available_tools in the agent config
         return v
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "title": "List directory contents",
-                "description": "List all files in the current directory",
-                "estimated_duration": "5 minutes",
-                "task_type": "tool",
-                "tool_name": "ls",
-                "tool_params": {}
-            }
-        }
-
 class AgentTask(Task):
+    task_type: Literal["agent"] = "agent"
     agent_name: str = Field(
         ...,
         description="Name of the subordinate agent to handle this task"
@@ -98,18 +79,32 @@ class AgentTask(Task):
 
     @field_validator('agent_name')
     def validate_agent_name(cls, v, values):
-        # This will be validated against available_agents in the agent config
         return v
+
+class TaskList(BaseModel):
+    activity: str = Field(..., description="The overall activity or goal")
+    tasks: List[Union[ToolTask, AgentTask]] = Field(..., description="List of tasks to be executed")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "title": "Analyze text files",
-                "description": "Read and summarize text files in the directory",
-                "estimated_duration": "10 minutes",
-                "task_type": "agent",
-                "agent_name": "text_analyzer",
-                "instructions": "Read each text file in the directory and provide a one-sentence summary of its contents"
+                "activity": "Directory Analysis",
+                "tasks": [
+                    {
+                        "title": "List directory contents",
+                        "description": "List all files in the current directory",
+                        "task_type": "tool",
+                        "tool_name": "ls",
+                        "tool_params": {}
+                    },
+                    {
+                        "title": "Analyze files",
+                        "description": "Analyze the content of all text files",
+                        "task_type": "agent",
+                        "agent_name": "file_analyzer",
+                        "instructions": "Read and analyze all text files in the directory"
+                    }
+                ]
             }
         }
 
@@ -140,7 +135,6 @@ class TaskBreakdown(BaseModel):
                     {
                         "title": "List directory contents",
                         "description": "List all files in the specified directory",
-                        "estimated_duration": "5 minutes",
                         "task_type": "tool",
                         "tool_name": "ls",
                         "tool_params": {}

@@ -23,7 +23,18 @@ class Agent:
 
     def execute_tool(self, tool_name: str, tool_params: Dict[str, Any]) -> str:
         """Execute a tool and return its result."""
-        return self.tool_registry.execute_tool(tool_name, tool_params)
+        try:
+            # Extract only the JSON portion if mixed with text
+            if isinstance(tool_params, str):
+                import re
+                json_match = re.search(r'\{[^}]*\}', tool_params)
+                if json_match:
+                    tool_params = json.loads(json_match.group())
+            return self.tool_registry.execute_tool(tool_name, tool_params)
+        except json.JSONDecodeError as e:
+            return f"Error parsing tool parameters: {str(e)}"
+        except Exception as e:
+            return f"Error executing tool: {str(e)}"
 
     def process_tool_result(self, tool_name: str, result: str) -> None:
         """Process the result of a tool execution and add it to message history."""
