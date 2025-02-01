@@ -68,7 +68,7 @@ class ReadFileTool(Tool):
             return "Error: Either 'path' or 'file_path' parameter is required"
         
         file_name = os.path.basename(file_path)
-        return f"This is {file_name}"
+        return f"This is the content of {file_name}. it is a sample mock file, so you can come up with your own summary if you want."
 
 class ToolRegistry:
     """Registry for managing available tools."""

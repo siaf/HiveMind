@@ -62,7 +62,7 @@ def main():
             "cd": "Change current working directory"
         },
         available_agents={
-            "text_analyzer": "Analyzes text files one at a time, providing detailed content summaries"
+            "text_analyzer": "Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once."
         },
         verbose=args.verbose
     )
@@ -82,18 +82,21 @@ def main():
     # Initialize agents
     directory_analyzer = Agent(directory_analyzer_config)
     text_analyzer = Agent(text_analyzer_config)
-
-    print(f"\nAnalyzing directory: {COLORS['BOLD']}{args.path}{COLORS['END']}\n")
     
-    # Initialize task queue
+    # print(f"\nAnalyzing directory: {COLORS['BOLD']}{args.path}{COLORS['END']}\n")
+    
+    # Initialize task queue for text analyzer testing
     task_queue = TaskQueue()
     
-    # Initialize workflow with the directory analyzer agent
-    workflow = Workflow(directory_analyzer, task_queue)
+    # Initialize workflow with text analyzer for testing
+    workflow = Workflow(text_analyzer, task_queue)
+
+    # Test the text analyzer with a sample file
+    workflow.process_queue("Analyze the contents of test.txt")
 
     # Process the queue with the initial prompt
-    normalized_path = args.path.replace('\\', '/')
-    workflow.process_queue(f"Analyze the contents of {normalized_path}")
+    #normalized_path = args.path.replace('\\', '/')
+    #workflow.process_queue(f"Analyze the contents of {normalized_path}")
 
 if __name__ == "__main__":
     main()

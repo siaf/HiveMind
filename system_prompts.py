@@ -57,7 +57,7 @@ class SystemPrompt(BaseModel):
         description="Example responses to guide the model"
     )
     format_instructions: str = Field(
-        default="Return your response as a clean JSON object without any markdown formatting. The JSON object should have 'activity' and 'tasks' fields. Tasks can be either tool tasks or agent tasks.",
+        default="Return your response as a clean JSON object without any markdown formatting. The JSON object should have 'activity' and 'tasks' fields. Tasks can be tool tasks, agent tasks, or completion tasks. Use completion tasks to signal the end of a workflow with final results.",
         description="Instructions for response formatting",
         min_length=20
     )
@@ -91,6 +91,16 @@ class SystemPrompt(BaseModel):
                                     "instructions": {"type": "string", "minLength": 20}
                                 },
                                 "required": ["title", "description", "task_type", "agent_name", "instructions"]
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string", "minLength": 3},
+                                    "description": {"type": "string", "minLength": 10},
+                                    "task_type": {"type": "string", "enum": ["completion"]},
+                                    "result": {"type": "string", "minLength": 10}
+                                },
+                                "required": ["title", "description", "task_type", "result"]
                             }
                         ]
                     },
@@ -116,15 +126,17 @@ class SystemPrompt(BaseModel):
                     raise ValueError('Tool tasks must have tool_name and tool_params fields')
                 if task['task_type'] == 'agent' and not all(k in task for k in ('agent_name', 'instructions')):
                     raise ValueError('Agent tasks must have agent_name and instructions fields')
+                if task['task_type'] == 'completion' and not all(k in task for k in ('result',)):
+                    raise ValueError('Completion tasks must have a result field')
         return v
 
     def generate_prompt(self) -> str:
         """Generate the complete system prompt string with enhanced structure."""
         sections = [
-            f"You are a task planning assistant. {self.content}",
+            f"You are an AI Agent with a task planning assistance capababilities. Your goal is to ultimately return a single final completion result formated as explained later {self.content}",
             "Available tools:\n" + "\n".join([f"- {tool}: {desc}" for tool, desc in sorted(self.available_tools.items())]),
             "Available agents:\n" + "\n".join([f"- {agent}: {desc}" for agent, desc in sorted(self.available_agents.items())]),
-            f"IMPORTANT: {self.format_instructions} When providing file paths in responses, use forward slashes (/) instead of backslashes (\\) for cross-platform compatibility.",
+            f"IMPORTANT: {self.format_instructions} Don't include tasks that have already been completed.",
             "Response Schema:",
             str(self.response_schema),
             "Example outputs:"
@@ -144,14 +156,22 @@ class SystemPrompt(BaseModel):
                     "format_instructions": "Return a JSON object with activity and tasks fields",
                     "examples": [{
                         "activity": "System Architecture",
-                        "tasks": [{
-                            "title": "Design system components",
-                            "description": "Create detailed architecture diagrams and component specifications",
-                            "task_type": "tool",
-                            "tool_name": "design_tool",
-                            "tool_params": {},
-                            "owner_agent": "system_designer"
-                        }]
+                        "tasks": [
+                            {
+                                "title": "Design system components",
+                                "description": "Create detailed architecture diagrams and component specifications",
+                                "task_type": "tool",
+                                "tool_name": "design_tool",
+                                "tool_params": {},
+                                "owner_agent": "system_designer"
+                            },
+                            {
+                                "title": "Architecture Review Complete",
+                                "description": "System architecture design and review has been completed",
+                                "task_type": "completion",
+                                "result": "Architecture design completed with all major components specified and reviewed"
+                            }
+                        ]
                     }]
                 }
             ]

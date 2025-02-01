@@ -66,8 +66,12 @@ class Workflow:
 
         if task.task_type == "tool":
             self._execute_tool_task(task, executing_agent)
-        else:
+        elif task.task_type == "agent":
             self._execute_agent_task(task, executing_agent)
+        elif task.task_type == "completion":
+            print(f"{COLORS['GREEN']}Workflow Completed with Result:\n{task.result}{COLORS['END']}")
+            # No need to process further tasks after completion
+            self.task_queue.queue.clear()
 
         # Mark current task as completed and update agent state
         self.task_queue.complete_current_task()

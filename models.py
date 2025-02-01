@@ -33,9 +33,9 @@ class Task(BaseModel, ABC):
         min_length=10,
         examples=["Set up JWT-based authentication system", "Design and implement database schema"]
     )
-    task_type: Literal["tool", "agent"] = Field(
+    task_type: Literal["tool", "agent", "completion"] = Field(
         ...,
-        description="Type of task - either a tool task or an agent task"
+        description="Type of task - either a tool task, agent task, or completion task"
     )
     owner_agent: str = Field(
         default="",
@@ -113,6 +113,14 @@ class TaskList(BaseModel):
             }
         }
 
+class CompletionTask(Task):
+    task_type: Literal["completion"] = "completion"
+    result: str = Field(
+        ...,
+        description="The final result or summary of the completed work",
+        min_length=10
+    )
+
 class TaskBreakdown(BaseModel):
     activity: str = Field(
         ...,
@@ -120,7 +128,7 @@ class TaskBreakdown(BaseModel):
         min_length=5,
         examples=["Backend Development", "Frontend Implementation", "System Architecture"]
     )
-    tasks: List[Union[ToolTask, AgentTask]] = Field(
+    tasks: List[Union[ToolTask, AgentTask, CompletionTask]] = Field(
         ...,
         description="List of tasks under this activity",
         min_items=1
