@@ -25,23 +25,25 @@ class SystemPrompt(BaseModel):
     examples: List[Dict] = Field(
         default=[
             {
-                "activity": "Directory Analysis",
+                "activity": "Name of activity 1",
                 "tasks": [{
-                    "title": "List directory contents",
-                    "description": "List all files in the current directory",
+                    "title": "a title for the activity",
+                    "description": "a description of the task in one sentence.",
                     "task_type": "tool",
-                    "tool_name": "ls",
-                    "tool_params": {}
+                    "tool_name": "name of the tool from your available tools if any",
+                    "tool_params": {
+                        "paramname": "paramvalue"
+                    }
                 }]
             },
             {
-                "activity": "File Analysis",
+                "activity": "Name of activity 1",
                 "tasks": [{
-                    "title": "Analyze text files",
-                    "description": "Read and summarize text files in the directory",
+                    "title": "a title for the activity",
+                    "description": "a description of the task in one sentence.",
                     "task_type": "agent",
-                    "agent_name": "text_analyzer",
-                    "instructions": "Read each text file and provide a summary"
+                    "agent_name": "name of the agent from your available agents if any",
+                    "instructions": "instructions for the agent in a sentence."
                 }]
             }
         ],
