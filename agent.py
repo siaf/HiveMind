@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, ForwardRef
 from models import Message, AgentModel
 from backends import LLMBackend, OpenAIBackend, OllamaBackend
 from tools import ToolRegistry
@@ -8,17 +8,22 @@ from system_prompts import SystemPrompt
 class AgentConfig:
     def __init__(self, 
     name: str,
+    description: str,
     system_prompt_content: str,
     backend: str,
     model_name: str,
     available_tools: Dict[str, str],
-    available_agents: Dict[str, str],
+    available_agents: List['Agent'],
     verbose: bool = False,
     debug: bool = False):
+        # Store the actual agent objects
+        self.agent_objects = available_agents
+        # Convert agents to name-description dictionary for prompts
+        agent_descriptions = {agent.config.name: agent.config.description for agent in available_agents}
         prompt = SystemPrompt(
             content=system_prompt_content,
             available_tools=available_tools,
-            available_agents=available_agents
+            available_agents=agent_descriptions
         )
         system_prompt = prompt.generate_prompt()
         self.model = AgentModel(
@@ -27,11 +32,12 @@ class AgentConfig:
             backend=backend,
             model_name=model_name,
             available_tools=available_tools,
-            available_agents=available_agents,
+            available_agents=agent_descriptions,
             verbose=verbose,
             debug=debug,
         )
         self.name = self.model.name
+        self.description = description
         self.system_prompt = self.model.system_prompt
         self.backend = self.model.backend
         self.model_name = self.model.model_name
@@ -39,8 +45,6 @@ class AgentConfig:
         self.available_agents = self.model.available_agents
         self.verbose = self.model.verbose
         self.debug = self.model.debug
-       
-
 
 class Agent:
     def __init__(self, config: AgentConfig):

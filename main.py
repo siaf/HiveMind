@@ -32,25 +32,11 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    # Create agent models
-    directory_analyzer_config = AgentConfig(
-        name="DirectoryAnalyzer",
-        system_prompt_content="Analyze the specified directory by listing its contents and providing summaries of text files. Reminder that only JSON respones are acceptable as we need to parse them using code.",
-        backend="ollama",
-        model_name="deepseek-r1:14b",
-        available_tools={
-            "ls": "List directory contents",
-            "cd": "Change current working directory"
-        },
-        available_agents={
-            "text_analyzer": "Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once."
-        },
-        verbose=args.verbose,
-        debug=args.debug
-    )
+    
     
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
+        description="Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once.",
         system_prompt_content="Analyze text files and provide detailed summaries of their contents. Reminder that only JSON respones are acceptable as we need to parse them using code.",
         backend="ollama",
         model_name="deepseek-r1:14b",
@@ -61,11 +47,29 @@ def main():
         verbose=args.verbose,
         debug=args.debug
     )
+    text_analyzer = Agent(text_analyzer_config)
+    
+# Create agent models
+    directory_analyzer_config = AgentConfig(
+        name="DirectoryAnalyzer",
+        description="Analyzes the specified directory by listing its contents and providing summaries of text files.",
+        system_prompt_content="Analyze the specified directory by listing its contents and providing summaries of text files. Reminder that only JSON respones are acceptable as we need to parse them using code.",
+        backend="ollama",
+        model_name="deepseek-r1:14b",
+        available_tools={
+            "ls": "List directory contents",
+            "cd": "Change current working directory"
+        },
+        available_agents={
+            text_analyzer
+        },
+        verbose=args.verbose,
+        debug=args.debug
+    )
 
     # Initialize agents with their respective configs
     directory_analyzer = Agent(directory_analyzer_config)
-    text_analyzer = Agent(text_analyzer_config)
-    
+   
     # Initialize task queue for text analyzer testing
     task_queue = TaskQueue()
     
