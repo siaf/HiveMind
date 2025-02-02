@@ -1,26 +1,10 @@
-import os
 import warnings
 warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 from dotenv import load_dotenv
 import argparse
 from agent import AgentConfig
-from models import TaskBreakdown, AgentModel
 from agent import Agent
-from task_queue import TaskQueue
-import json
-from shared_types import AgentState
 from workflow import Workflow
-
-# ANSI color codes
-COLORS = {
-    'BLUE': '\033[94m',
-    'CYAN': '\033[96m',
-    'GREEN': '\033[92m',
-    'YELLOW': '\033[93m',
-    'RED': '\033[91m',
-    'BOLD': '\033[1m',
-    'END': '\033[0m'
-}
 
 def main():
     parser = argparse.ArgumentParser(description='Run the agent to analyze directory contents')
@@ -70,11 +54,8 @@ def main():
     # Initialize agents with their respective configs
     directory_analyzer = Agent(directory_analyzer_config)
    
-    # Initialize task queue for text analyzer testing
-    task_queue = TaskQueue()
-    
     # Initialize workflow with text analyzer for testing
-    workflow = Workflow(directory_analyzer, task_queue)
+    workflow = Workflow(directory_analyzer)
 
     # Test the text analyzer with a sample file
     workflow.process_queue(f"Analyze the contents of {args.path}")

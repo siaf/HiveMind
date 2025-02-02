@@ -16,10 +16,10 @@ COLORS = {
 }
 
 class Workflow:
-    def __init__(self, primary_agent: Agent, task_queue: TaskQueue):
+    def __init__(self, primary_agent: Agent, task_queue: TaskQueue = None):
         self.primary_agent = primary_agent
-        self.task_queue = task_queue
-        self.task_count = 0
+        self.task_queue = task_queue if task_queue is not None else TaskQueue()
+        self.task_count = len(self.task_queue.queue)
 
     def process_queue(self, initial_prompt: str) -> None:
         """Process the task queue starting with an initial prompt."""
