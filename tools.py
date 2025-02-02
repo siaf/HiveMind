@@ -29,7 +29,7 @@ class ListDirectoryTool(Tool):
     
     def __init__(self):
         super().__init__()
-        self.requires_approval = True
+        self.requires_approval = False
     
     def _execute(self, params: Dict[str, Any]) -> str:
         # Mock implementation that returns 3 text files
@@ -47,19 +47,19 @@ class ChangeDirectoryTool(Tool):
     
     def __init__(self):
         super().__init__()
-        self.requires_approval = True
+        self.requires_approval = False
     
     def _execute(self, params: Dict[str, Any]) -> str:
         # Mock implementation that simulates directory change
         path = params.get('path', '.')
-        return f"Changed directory to {path}"
+        return f"Tool Suceeded. Changed directory to {path}"
 
 class ReadFileTool(Tool):
     """Tool for reading file contents."""
     
     def __init__(self):
         super().__init__()
-        self.requires_approval = True
+        self.requires_approval = False
     
     def _execute(self, params: Dict[str, Any]) -> str:
         # Mock implementation that returns content based on file name

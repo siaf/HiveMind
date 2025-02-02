@@ -23,8 +23,12 @@ class Workflow:
 
     def process_queue(self, initial_prompt: str) -> None:
         """Process the task queue starting with an initial prompt."""
+        # Print workflow start boundary
+        print(f"\n{COLORS['RED']}=== Agent {self.primary_agent.config.name} starting workflow to do: {initial_prompt} ==={COLORS['END']}")
+        print("-" * 50)
+
         # Maximum number of retries for parsing LLM response
-        MAX_RETRIES = 1
+        MAX_RETRIES = 3
         retry_count = 0
         
         # Normalize the initial prompt path separators
@@ -33,11 +37,9 @@ class Workflow:
         while retry_count < MAX_RETRIES:
             # Generate initial analysis
             self.primary_agent.state = AgentState.THINKING
-            print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
+            print(f"{COLORS['YELLOW']}Agent {self.primary_agent.config.name} is {self.primary_agent.state.value}{COLORS['END']}")
             response = self.primary_agent.generate_response(initial_prompt, self.task_queue)
-            self.primary_agent.state = AgentState.IDLE
-            print(f"{COLORS['YELLOW']}Agent State: {self.primary_agent.state.value}{COLORS['END']}")
-
+            
             try:
                 # Clean and escape the response string before parsing
                 cleaned_response = response.encode('utf-8').decode('unicode-escape')
@@ -49,9 +51,6 @@ class Workflow:
                     task.owner_agent = self.primary_agent.config.name
                 self.task_queue.add_tasks(task_breakdown.tasks)
 
-                # Print initial analysis header
-                print(f"{COLORS['BOLD']}Directory Analysis:{COLORS['END']}")
-                print("-" * 50)
 
                 # Process all tasks in the queue
                 while self.task_queue.has_pending_tasks() or self.task_queue.current_task:
@@ -84,7 +83,7 @@ class Workflow:
         elif task.task_type == "agent":
             self._execute_agent_task(task, executing_agent)
         elif task.task_type == "completion":
-            print(f"{COLORS['GREEN']}Workflow Completed with Result:\n{task.result}{COLORS['END']}")
+            print(f"\n{COLORS['RED']}=== Agent {executing_agent.config.name} completed workflow to '{task.title}' with the following results: \n{task.result}{COLORS['END']}")
             # No need to process further tasks after completion
             self.task_queue.queue.clear()
 
@@ -94,12 +93,9 @@ class Workflow:
 
     def _print_task_info(self, task) -> None:
         """Print information about the current task."""
-        print(f"\n{COLORS['BLUE']}{COLORS['BOLD']}Task {self.task_count}: {task.title}{COLORS['END']}")
-        print(f"{COLORS['CYAN']}Description: {task.description}{COLORS['END']}")
-        print(f"{COLORS['CYAN']}Owner Agent: {task.owner_agent}{COLORS['END']}")
-        print(f"{COLORS['CYAN']}Remaining tasks in queue: {len(self.task_queue.queue)}{COLORS['END']}")
         executing_agent = self._get_executing_agent(task)
-        print(f"{COLORS['YELLOW']}Agent State: {executing_agent.state.value}{COLORS['END']}")
+        print(f"\n{COLORS['BLUE']}{COLORS['BOLD']}{executing_agent.config.name} has started Task ({self.task_count}): {task.title}. {task.description}. [Queue Size: {len(self.task_queue.queue)}]{COLORS['END']}")
+        print(f"{COLORS['YELLOW']}Agent {executing_agent.config.name} is {executing_agent.state.value} [Queue Size: {len(self.task_queue.queue)}]{COLORS['END']}")
 
     def _get_executing_agent(self, task) -> Agent:
         """Determine which agent should execute the task."""
@@ -108,10 +104,10 @@ class Workflow:
 
     def _execute_tool_task(self, task, executing_agent: Agent) -> None:
         """Execute a tool task and process its results."""
-        print(f"{COLORS['GREEN']}Tool: {task.tool_name} Params: {task.tool_params}{COLORS['END']}")
+        print(f"{COLORS['GREEN']}Agent {executing_agent.config.name} is using tool: {task.tool_name} with params: {task.tool_params}, as part of {task.title}{COLORS['END']}")
         
         executing_agent.state = AgentState.EXECUTING_TASK
-        print(f"{COLORS['YELLOW']}Agent State: {executing_agent.state.value}{COLORS['END']}")
+        print(f"{COLORS['YELLOW']}Agent {executing_agent.config.name} is {executing_agent.state.value} [Queue Size: {len(self.task_queue.queue)}]{COLORS['END']}")
         
         result = executing_agent.execute_tool(task.tool_name, task.tool_params)
         executing_agent.process_tool_result(task.tool_name, result)
@@ -122,30 +118,38 @@ class Workflow:
 
         # Generate and process follow-up response
         executing_agent.state = AgentState.THINKING
-        print(f"{COLORS['YELLOW']}Agent State: {executing_agent.state.value}{COLORS['END']}")
+        print(f"{COLORS['YELLOW']}Agent {executing_agent.config.name} is {executing_agent.state.value} [Queue Size: {len(self.task_queue.queue)}]{COLORS['END']}")
         
         follow_up_response = executing_agent.generate_response(
             f"Process the results of {task.tool_name} execution",
             self.task_queue
         )
-        print(f"{COLORS['GREEN']}Follow-up Analysis:\n{follow_up_response}{COLORS['END']}")
-
+        
         # Process any new tasks from the follow-up response
         self.task_queue.process_follow_up_response(follow_up_response, executing_agent)
 
     def _execute_agent_task(self, task, executing_agent: Agent) -> None:
         """Execute an agent task and process its results."""
         print(f"{COLORS['YELLOW']}Agent: {task.agent_name}{COLORS['END']}")
-        print(f"{COLORS['YELLOW']}Instructions: {task.instructions}{COLORS['END']}")
+        print(f"{COLORS['GREEN']}Agent {executing_agent.config.name} is instructing agent {task.agent_name} to do: {task.instructions}{COLORS['END']}")
 
-        executing_agent.state = AgentState.THINKING
-        print(f"{COLORS['YELLOW']}Agent State: {executing_agent.state.value}{COLORS['END']}")
+        # Find the subordinate agent from the executing agent's available agents
+        subordinate_agent = next((agent for agent in executing_agent.config.agent_objects 
+                                if agent.config.name == task.agent_name), None)
+        
+        if not subordinate_agent:
+            print(f"{COLORS['RED']}Error: Subordinate agent {task.agent_name} not found{COLORS['END']}")
+            return
+
+        # Update executing agent's state to waiting for subordinate
+        executing_agent.state = AgentState.WAITING_FOR_AGENT
+        print(f"{COLORS['YELLOW']}Agent {executing_agent.config.name} State: Waiting for {subordinate_agent.config.name}{COLORS['END']}")
 
         # Create a new task queue for the subordinate agent
         subordinate_queue = TaskQueue()
         
-        # Create a new workflow instance for the subordinate agent
-        subordinate_workflow = Workflow(executing_agent, subordinate_queue)
+        # Create a new workflow instance with the correct subordinate agent
+        subordinate_workflow = Workflow(subordinate_agent, subordinate_queue)
         
         # Process the task in the subordinate workflow
         subordinate_workflow.process_queue(task.instructions)
@@ -156,8 +160,24 @@ class Workflow:
             if final_result:
                 print(f"{COLORS['GREEN']}Subordinate Agent Final Result:\n{final_result}{COLORS['END']}")
                 
-                # Process the final result in the supervisor's workflow
-                self.task_queue.process_follow_up_response(final_result, executing_agent)
+                # Process the subordinate agent result
+                executing_agent.process_subordinate_agent_result(task.agent_name, final_result)
+
+                # Mark the task as completed before processing follow-up
+                self.task_queue.complete_current_task()
+
+                # Generate and process follow-up response
+                executing_agent.state = AgentState.THINKING
+                print(f"{COLORS['YELLOW']}Agent {executing_agent.config.name} is {executing_agent.state.value} [Queue Size: {len(self.task_queue.queue)}]{COLORS['END']}")
+                
+                follow_up_response = executing_agent.generate_response(
+                    f"Process the results of {task.agent_name} agent execution",
+                    self.task_queue
+                )
+                print(f"{COLORS['GREEN']}Follow-up Analysis:\n{follow_up_response}{COLORS['END']}")
+
+                # Process any new tasks from the follow-up response
+                self.task_queue.process_follow_up_response(follow_up_response, executing_agent)
             else:
                 print(f"{COLORS['YELLOW']}No final result from subordinate agent{COLORS['END']}")
         else:

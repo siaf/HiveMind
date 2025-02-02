@@ -32,12 +32,12 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    
-    
+    reminder_for_json_only_prompts = "Reminder that only JSON respones are acceptable as we need to parse them using code. DO NOT INCLUDE ADDITIOAL EXPLANATION OR ANALYSIS."
+                                    
     text_analyzer_config = AgentConfig(
         name="text_analyzer",
-        description="Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once.",
-        system_prompt_content="Analyze text files and provide detailed summaries of their contents. Reminder that only JSON respones are acceptable as we need to parse them using code.",
+        description=f"Analyzes text files one at a time, providing detailed content summaries. Cannot process muliple files at once. {reminder_for_json_only_prompts}",
+        system_prompt_content="Analyze text files and provide detailed summaries of their contents.",
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={
@@ -53,7 +53,7 @@ def main():
     directory_analyzer_config = AgentConfig(
         name="DirectoryAnalyzer",
         description="Analyzes the specified directory by listing its contents and providing summaries of text files.",
-        system_prompt_content="Analyze the specified directory by listing its contents and providing summaries of text files. Reminder that only JSON respones are acceptable as we need to parse them using code.",
+        system_prompt_content=f"Analyze the specified directory by listing its contents and providing summaries of text files. {reminder_for_json_only_prompts}",
         backend="ollama",
         model_name="deepseek-r1:14b",
         available_tools={

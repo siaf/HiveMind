@@ -91,6 +91,17 @@ class Agent:
             content=formatted_result,
             name=self.config.name
         ))
+    
+    def process_subordinate_agent_result(self, agent_name: str, result: str) -> None:
+        """Process the result of a agent workflow execution and add it to message history."""
+        formatted_result = f"=== Agent Execution Result ===\nTool: {agent_name}\nResult:\n{result}\n=== End Result ===\n"
+        if self.current_task:
+            formatted_result += f"\n=== Task Completion ===\nTask: {self.current_task.name}\nDescription: {self.current_task.description}\nResult: {result}\n=== End Task Completion ==="
+        self.add_message(Message(
+            role="system",
+            content=formatted_result,
+            name=self.config.name
+        ))
 
     def generate_response(self, prompt: str, task_queue) -> str:
         self.state = AgentState.THINKING
