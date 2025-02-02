@@ -54,6 +54,47 @@ class ChangeDirectoryTool(Tool):
         path = params.get('path', '.')
         return f"Tool Suceeded. Changed directory to {path}"
 
+class CreateFileTool(Tool):
+    """Tool for creating a new file with content."""
+    
+    def __init__(self):
+        super().__init__()
+        self.requires_approval = True
+    
+    def _execute(self, params: Dict[str, Any]) -> str:
+        file_path = params.get('file_path')
+        content = params.get('content', '')
+        
+        if not file_path:
+            return "Error: 'file_path' parameter is required"
+        
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w') as f:
+                f.write(content)
+            return f"Successfully created file: {file_path}"
+        except Exception as e:
+            return f"Error creating file: {str(e)}"
+
+class CreateFolderTool(Tool):
+    """Tool for creating a new folder."""
+    
+    def __init__(self):
+        super().__init__()
+        self.requires_approval = True
+    
+    def _execute(self, params: Dict[str, Any]) -> str:
+        path = params.get('path')
+        
+        if not path:
+            return "Error: 'path' parameter is required"
+        
+        try:
+            os.makedirs(path, exist_ok=True)
+            return f"Successfully created folder: {path}"
+        except Exception as e:
+            return f"Error creating folder: {str(e)}"
+
 class ReadFileTool(Tool):
     """Tool for reading file contents."""
     
@@ -62,13 +103,15 @@ class ReadFileTool(Tool):
         self.requires_approval = False
     
     def _execute(self, params: Dict[str, Any]) -> str:
-        # Mock implementation that returns content based on file name
         file_path = params.get('path') or params.get('file_path')
         if not file_path:
             return "Error: Either 'path' or 'file_path' parameter is required"
         
-        file_name = os.path.basename(file_path)
-        return f"This is the content of {file_name}. it is a sample mock file, so you can come up with your own summary if you want."
+        try:
+            with open(file_path, 'r') as f:
+                return f.read()
+        except Exception as e:
+            return f"Error reading file: {str(e)}"
 
 class ToolRegistry:
     """Registry for managing available tools."""
@@ -79,9 +122,11 @@ class ToolRegistry:
     
     def _register_default_tools(self):
         """Register default tools."""
-        self.register_tool('ls', ListDirectoryTool(), {'path': 'Optional path to list directory contents (defaults to current directory)'})
+        self.register_tool('ls', ListDirectoryTool())
         self.register_tool('cd', ChangeDirectoryTool())
         self.register_tool('read_file', ReadFileTool())
+        self.register_tool('create_file', CreateFileTool())
+        self.register_tool('create_folder', CreateFolderTool())
     
     def register_tool(self, name: str, tool: Tool, description: Dict[str, str] = None):
         """Register a new tool.

@@ -3,7 +3,7 @@ from typing import List
 import json
 import openai
 import requests
-from models import Message
+from .models import Message
 from threading import Lock
 
 class LLMBackend:

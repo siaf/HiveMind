@@ -1,8 +1,8 @@
 from typing import List, Dict, Any
-from models import TaskBreakdown
-from agent import Agent
-from task_queue import TaskQueue
-from shared_types import AgentState
+from .models import TaskBreakdown
+from .agent import Agent
+from .task_queue import TaskQueue
+from .shared_types import AgentState
 
 # ANSI color codes
 COLORS = {
@@ -50,7 +50,6 @@ class Workflow:
                 for task in task_breakdown.tasks:
                     task.owner_agent = self.primary_agent.config.name
                 self.task_queue.add_tasks(task_breakdown.tasks)
-
 
                 # Process all tasks in the queue
                 while self.task_queue.has_pending_tasks() or self.task_queue.current_task:

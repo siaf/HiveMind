@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from collections import deque
-from models import TaskBreakdown, Task, ToolTask, AgentTask
-from agent import Agent
+from .models import TaskBreakdown, Task, ToolTask, AgentTask
+from .agent import Agent
 
 class TaskQueue:
     def __init__(self):

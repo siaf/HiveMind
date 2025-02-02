@@ -1,9 +1,9 @@
 from typing import List, Dict, Any, Optional, ForwardRef
-from models import Message, AgentModel
-from backends import LLMBackend, OpenAIBackend, OllamaBackend
-from tools import ToolRegistry
-from shared_types import AgentState, Task
-from system_prompts import SystemPrompt
+from .models import Message, AgentModel
+from .backends import LLMBackend, OpenAIBackend, OllamaBackend
+from .tools import ToolRegistry
+from .shared_types import AgentState, Task
+from .system_prompts import SystemPrompt
 
 class AgentConfig:
     def __init__(self, 

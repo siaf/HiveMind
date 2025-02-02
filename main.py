@@ -3,13 +3,13 @@ import warnings
 warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 from dotenv import load_dotenv
 import argparse
-from agent import AgentConfig
-from models import TaskBreakdown, AgentModel
-from agent import Agent
-from task_queue import TaskQueue
+from core.agent import AgentConfig
+from core.models import TaskBreakdown, AgentModel
+from core.agent import Agent
+from core.task_queue import TaskQueue
 import json
-from shared_types import AgentState
-from workflow import Workflow
+from core.shared_types import AgentState
+from core.workflow import Workflow
 
 # ANSI color codes
 COLORS = {
