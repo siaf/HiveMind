@@ -34,25 +34,3 @@ class TaskQueue:
     def has_pending_tasks(self) -> bool:
         """Check if there are any pending tasks in the queue."""
         return len(self.queue) > 0
-
-    MAX_RETRY_ATTEMPTS = 3
-
-    def process_follow_up_response(self, response: str, agent: Agent):
-        """Process a follow-up response and add any new tasks to the queue."""
-        retry_count = 0
-        while retry_count < self.MAX_RETRY_ATTEMPTS:
-            try:
-                # Clean and escape the response string before parsing
-                cleaned_response = response.encode('utf-8').decode('unicode-escape')
-                # Parse the response into TaskBreakdown model
-                task_breakdown = TaskBreakdown.model_validate_json(cleaned_response)
-                # Add new tasks to the queue
-                self.add_tasks(task_breakdown.tasks)
-                return  # Successfully processed, exit the retry loop
-            except Exception as e:
-                retry_count += 1
-                if retry_count < self.MAX_RETRY_ATTEMPTS:
-                    print(f"Error parsing follow-up response (attempt {retry_count}/{self.MAX_RETRY_ATTEMPTS}). Retrying...")
-                    response = agent.generate_response(f"Previous response could not be parsed. Please try again with a valid JSON response.", self)
-                else:
-                    print(f"Error parsing follow-up response after {self.MAX_RETRY_ATTEMPTS} attempts: {str(e)}")

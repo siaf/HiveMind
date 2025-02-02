@@ -101,6 +101,27 @@ class Workflow:
         # This method should be expanded when more agents are added
         return self.primary_agent
 
+    def process_follow_up_response(self, response: str, agent: Agent):
+        """Process a follow-up response and add any new tasks to the queue."""
+        MAX_RETRY_ATTEMPTS = 3
+        retry_count = 0
+        while retry_count < MAX_RETRY_ATTEMPTS:
+            try:
+                # Clean and escape the response string before parsing
+                cleaned_response = response.encode('utf-8').decode('unicode-escape')
+                # Parse the response into TaskBreakdown model
+                task_breakdown = TaskBreakdown.model_validate_json(cleaned_response)
+                # Add new tasks to the queue
+                self.task_queue.add_tasks(task_breakdown.tasks)
+                return  # Successfully processed, exit the retry loop
+            except Exception as e:
+                retry_count += 1
+                if retry_count < MAX_RETRY_ATTEMPTS:
+                    print(f"{COLORS['YELLOW']}Error parsing follow-up response (attempt {retry_count}/{MAX_RETRY_ATTEMPTS}). Retrying...{COLORS['END']}")
+                    response = agent.generate_response(f"Previous response could not be parsed. Please try again with a valid JSON response.", self.task_queue)
+                else:
+                    print(f"{COLORS['RED']}Error parsing follow-up response after {MAX_RETRY_ATTEMPTS} attempts: {str(e)}{COLORS['END']}")
+
     def _execute_tool_task(self, task, executing_agent: Agent) -> None:
         """Execute a tool task and process its results."""
         print(f"{COLORS['GREEN']}Agent {executing_agent.config.name} is using tool: {task.tool_name} with params: {task.tool_params}, as part of {task.title}{COLORS['END']}")
@@ -125,7 +146,7 @@ class Workflow:
         )
         
         # Process any new tasks from the follow-up response
-        self.task_queue.process_follow_up_response(follow_up_response, executing_agent)
+        self.process_follow_up_response(follow_up_response, executing_agent)
 
     def _execute_agent_task(self, task, executing_agent: Agent) -> None:
         """Execute an agent task and process its results."""
@@ -176,7 +197,7 @@ class Workflow:
                 print(f"{COLORS['GREEN']}Follow-up Analysis:\n{follow_up_response}{COLORS['END']}")
 
                 # Process any new tasks from the follow-up response
-                self.task_queue.process_follow_up_response(follow_up_response, executing_agent)
+                self.process_follow_up_response(follow_up_response, executing_agent)
             else:
                 print(f"{COLORS['YELLOW']}No final result from subordinate agent{COLORS['END']}")
         else:
